@@ -49,8 +49,8 @@ left join omop_deid.concept dis on dis.concept_id = vo.discharge_to_concept_id
 
 ## Diagnoses => Condition_Occurrence
 ```
-drop table if exists wei_diagnoses;
-create table wei_diagnoses as
+drop table if exists xdr_dx;
+create table xdr_dx as
 select distinct co.person_id
   ,co.visit_occurrence_id
   ,co.condition_occurrence_id
@@ -59,15 +59,16 @@ select distinct co.person_id
   ,cs_con.concept_code as diagnosis_code
   ,cs_con.concept_name diagnosis_description
 from omop_deid.condition_occurrence co
-join wei_cohort coh on co.person_id = coh.person_id
-join omop_deid.concept cs_con on co.condition_source_concept_id = cs_con.concept_id and domain_id = 'Condition' and vocabulary_id in ('ICD10CM','ICD9CM')
+join xdr_coh coh on co.person_id = coh.person_id
+join omop_deid.concept cs_con on co.condition_source_concept_id = cs_con.concept_id 
+    and domain_id = 'Condition' and vocabulary_id in ('ICD10CM','ICD9CM')
 ;
 ```
 
 ## Procedures => Procedure_Occurrence
 ```
-drop table if exists wei_procedures;
-create table wei_procedures as
+drop table if exists xdr_proc;
+create table xdr_proc as
 select distinct po.person_id
   ,po.procedure_occurrence_id
   ,po.visit_occurrence_id
@@ -76,7 +77,8 @@ select distinct po.person_id
   ,p_con.vocabulary_id procedure_type
   ,p_con.concept_code procedure_code
 from omop_deid.procedure_occurrence po
-join wei_cohort coh on po.person_id = coh.person_id
+join xdr_coh coh on po.person_id = coh.person_id
 left join omop_deid.concept p_con on p_con.concept_id = po.procedure_concept_id and domain_id = 'Procedure'
    and vocabulary_id in ('CPT4','ICD9CM','ICD10CM','ICD9Proc','ICD10PCS')
+;
 ```
