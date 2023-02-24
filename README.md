@@ -1,7 +1,7 @@
 # DATABRICKS OMOP_DEID CODE SNIPPETS
 ## Code snippets for UCDDP Databricks SQL to produce EHR like tables using OMOP_DEID 
 
-## Patient => Person
+## Patients => Person
 ```
 drop table if exists xdr_pat;
 create table xdr_pat as
@@ -19,4 +19,64 @@ left join omop_deid.concept race on race.concept_id = p.race_concept_id
 left join omop_deid.concept eth on eth.concept_id = p.ethnicity_concept_id
 left join omop_deid.death d on coh.person_id = d.person_id
 ;
+```
+
+## Encounters => Visit_Occurrence
+```
+drop table if exists xdr_enc;
+create table xdr_enc as
+select coh.person_id
+  ,vo.visit_occurrence_id
+  ,et.concept_name encounter_type
+  ,visit_start_date
+  ,visit_end_date
+  ,adm.concept_name admitting_source
+  ,dis.concept_name discharge_to
+  ,care_site_name
+  ,pos.concept_name place_of_service
+  ,location_source_value location
+from xdr_coh coh
+join omop_deid.visit_occurrence vo on coh.person_id = vo.person_id
+join omop_deid.visit_detail vd on vd.visit_occurrence_id = vo.visit_occurrence_id
+left join omop_deid.concept et on et.concept_id = vo.visit_concept_id
+left join omop_deid.care_site cs on cs.care_site_id = vo.care_site_id
+left join omop_deid.location loc on loc.location_id = cs.location_id
+left join omop_deid.concept pos on pos.concept_id = cs.place_of_service_concept_id
+left join omop_deid.concept adm on adm.concept_id = vo.admitting_source_concept_id
+left join omop_deid.concept dis on dis.concept_id = vo.discharge_to_concept_id
+;
+```
+
+## Diagnoses => Condition_Occurrence
+```
+drop table if exists wei_diagnoses;
+create table wei_diagnoses as
+select distinct co.person_id
+  ,co.visit_occurrence_id
+  ,co.condition_occurrence_id
+  ,co.condition_start_date
+  ,cs_con.vocabulary_id as diagnosis_type
+  ,cs_con.concept_code as diagnosis_code
+  ,cs_con.concept_name diagnosis_description
+from omop_deid.condition_occurrence co
+join wei_cohort coh on co.person_id = coh.person_id
+join omop_deid.concept cs_con on co.condition_source_concept_id = cs_con.concept_id and domain_id = 'Condition' and vocabulary_id in ('ICD10CM','ICD9CM')
+;
+```
+
+## Procedures => Procedure_Occurrence
+```
+drop table if exists wei_procedures;
+create table wei_procedures as
+select distinct po.person_id
+  ,po.procedure_occurrence_id
+  ,po.visit_occurrence_id
+  ,po.procedure_date
+  ,p_con.concept_name procedure_description
+  ,p_con.vocabulary_id procedure_type
+  ,p_con.concept_code procedure_code
+from omop_deid.procedure_occurrence po
+join wei_cohort coh on po.person_id = coh.person_id
+left join omop_deid.concept p_con on p_con.concept_id = po.procedure_concept_id and domain_id = 'Procedure'
+   and vocabulary_id in ('CPT4','ICD9CM','ICD10CM','ICD9Proc','ICD10PCS')
 ```
