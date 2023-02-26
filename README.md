@@ -82,3 +82,42 @@ left join omop_deid.concept p_con on p_con.concept_id = po.procedure_concept_id 
    and vocabulary_id in ('CPT4','ICD9CM','ICD10CM','ICD9Proc','ICD10PCS')
 ;
 ```
+
+## Medications => Drug_Exposure
+```
+drop table if exists xdr_med;
+create table xdr_med as
+select distinct de.person_id
+  ,visit_occurrence_id
+  ,drug_exposure_id
+  ,dcon.concept_name medication_name
+  ,dcon.vocabulary_id source
+  ,drug_exposure_start_date start_date
+  ,drug_exposure_end_date end_date
+  ,refills
+  ,quantity
+  ,sig
+from omop_deid.drug_exposure de
+join xdr_coh coh on de.person_id = coh.person_id
+left join omop_deid.concept dcon on de.drug_concept_id = dcon.concept_id
+```
+
+## Labs -> Measurements
+```
+drop table if exists xdr_lab;
+create table xdr_lab as
+select distinct m.person_id
+  ,visit_occurrence_id
+  ,measurement_id
+  ,measurement_datetime
+  ,m_con.concept_name lab_name
+  ,m_con.vocabulary_id procedure_code_type
+  ,m_con.concept_code procedure_code
+  ,value_as_number
+  ,range_low
+  ,range_high
+from xdr_coh coh
+join omop_deid.measurement m on coh.person_id = m.person_id
+left join omop_deid.concept m_con on m.measurement_concept_id = m_con.concept_id
+;
+```
