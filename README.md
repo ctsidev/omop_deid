@@ -102,7 +102,7 @@ join xdr_coh coh on de.person_id = coh.person_id
 left join omop_deid.concept dcon on de.drug_concept_id = dcon.concept_id
 ```
 
-## Labs -> Measurements
+## Labs => Measurements
 ```
 drop table if exists xdr_lab;
 create table xdr_lab as
